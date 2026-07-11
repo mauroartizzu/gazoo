@@ -111,6 +111,7 @@ void main() {
       remoteAddress: InternetAddress.loopbackIPv4,
       remotePort: fakeRemote.port,
       idleTimeout: const Duration(milliseconds: 100),
+      sweepInterval: const Duration(milliseconds: 50),
     );
     await listener.start();
 
@@ -124,9 +125,8 @@ void main() {
     }).timeout(const Duration(seconds: 1));
     expect(listener.activeSessionCount, 1);
 
-    // RelayListener's internal sweep runs on a 10-second timer in production;
-    // for the test we wait past idleTimeout and call the public stop/start
-    // cycle instead — see Step 3 note on the injectable sweep interval.
+    // sweepInterval is explicitly set fast (50ms) for this test; production
+    // defaults to 10 seconds.
     await Future.delayed(const Duration(milliseconds: 250));
     expect(listener.activeSessionCount, 0);
   });
