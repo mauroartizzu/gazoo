@@ -32,6 +32,8 @@ class RelayService {
   final Map<String, ServerLiveInfo> _lastKnownLiveInfo = {};
   LanBroadcastResponder? _responder;
   List<ServerConfig> _activeServers = [];
+  // sync: true is safe here — add() is only ever called from already-async code
+  // (after real I/O), and no listener re-enters add() on this controller.
   final StreamController<RelayEvent> _eventController =
       StreamController<RelayEvent>.broadcast(sync: true);
   Timer? _pollTimer;
@@ -51,30 +53,40 @@ class RelayService {
     }
     _activeServers = servers;
 
-    for (final server in servers) {
-      final remoteAddresses = await InternetAddress.lookup(server.host);
-      final listener = RelayListener(
+    try {
+      for (final server in servers) {
+        final remoteAddresses = await InternetAddress.lookup(server.host);
+        final listener = RelayListener(
+          bindAddress: InternetAddress.anyIPv4,
+          listenPort: server.proxyPort,
+          remoteAddress: remoteAddresses.first,
+          remotePort: server.port,
+          idleTimeout: idleTimeout,
+          onLog: onLog,
+        );
+        await listener.start();
+        _listeners[server.id] = listener;
+      }
+
+      _responder = LanBroadcastResponder(
         bindAddress: InternetAddress.anyIPv4,
-        listenPort: server.proxyPort,
-        remoteAddress: remoteAddresses.first,
-        remotePort: server.port,
-        idleTimeout: idleTimeout,
+        enabledServers: () => _activeServers,
+        liveInfo: (server) =>
+            _lastKnownLiveInfo[server.id] ??
+            const ServerLiveInfo(
+                protocolVersion: 0, gameVersion: 'unknown', playerCount: 0, maxPlayers: 0),
         onLog: onLog,
       );
-      await listener.start();
-      _listeners[server.id] = listener;
+      await _responder!.start();
+    } catch (_) {
+      for (final listener in _listeners.values) {
+        await listener.stop();
+      }
+      _listeners.clear();
+      _activeServers = [];
+      _responder = null;
+      rethrow;
     }
-
-    _responder = LanBroadcastResponder(
-      bindAddress: InternetAddress.anyIPv4,
-      enabledServers: () => _activeServers,
-      liveInfo: (server) =>
-          _lastKnownLiveInfo[server.id] ??
-          const ServerLiveInfo(
-              protocolVersion: 0, gameVersion: 'unknown', playerCount: 0, maxPlayers: 0),
-      onLog: onLog,
-    );
-    await _responder!.start();
 
     _pollTimer = Timer.periodic(statusPollInterval, (_) => pollNow());
     await pollNow();
