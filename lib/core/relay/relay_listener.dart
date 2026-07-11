@@ -17,6 +17,7 @@ class RelayListener {
   final SessionTable _sessions = SessionTable();
   final Map<String, Future<RelaySession>> _pending = {};
   Timer? _sweepTimer;
+  bool _stopped = false;
   int bytesIn = 0;
   int bytesOut = 0;
 
@@ -26,7 +27,7 @@ class RelayListener {
     required this.remoteAddress,
     required this.remotePort,
     this.idleTimeout = const Duration(seconds: 60),
-    this.sweepInterval = const Duration(milliseconds: 100),
+    this.sweepInterval = const Duration(seconds: 10),
     this.onLog,
   });
 
@@ -52,22 +53,28 @@ class RelayListener {
   }
 
   Future<void> _handleClientDatagram(Datagram datagram) async {
+    if (_stopped) return;
     final key = sessionKeyFor(datagram.address, datagram.port);
     var session = _sessions.get(key);
     if (session == null) {
       final pending = _pending[key];
-      if (pending != null) {
-        session = await pending;
-      } else {
-        final future = _createSession(key, datagram.address, datagram.port);
-        _pending[key] = future;
-        try {
-          session = await future;
-        } finally {
-          _pending.remove(key);
+      try {
+        if (pending != null) {
+          session = await pending;
+        } else {
+          final future = _createSession(key, datagram.address, datagram.port);
+          _pending[key] = future;
+          try {
+            session = await future;
+          } finally {
+            _pending.remove(key);
+          }
         }
+      } on StateError {
+        return;
       }
     }
+    if (_stopped || _socket == null) return;
     session.touch(DateTime.now());
     session.serverSocket.send(datagram.data, remoteAddress, remotePort);
     bytesOut += datagram.data.length;
@@ -76,6 +83,10 @@ class RelayListener {
   Future<RelaySession> _createSession(
       String key, InternetAddress clientAddress, int clientPort) async {
     final rawSocket = await RawDatagramSocket.bind(InternetAddress.anyIPv4, 0);
+    if (_stopped) {
+      rawSocket.close();
+      throw StateError('RelayListener stopped while creating session for $key');
+    }
     final session = RelaySession(
       key: key,
       clientAddress: clientAddress,
@@ -93,12 +104,14 @@ class RelayListener {
     if (event != RawSocketEvent.read) return;
     final datagram = session.serverSocket.receive();
     if (datagram == null) return;
+    if (_socket == null) return;
     session.touch(DateTime.now());
     _socket!.send(datagram.data, session.clientAddress, session.clientPort);
     bytesIn += datagram.data.length;
   }
 
   Future<void> stop() async {
+    _stopped = true;
     _sweepTimer?.cancel();
     _sweepTimer = null;
     _sessions.closeAll();
