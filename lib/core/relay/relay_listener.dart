@@ -47,6 +47,7 @@ class RelayListener {
 
   void _onClientEvent(RawSocketEvent event) {
     if (event != RawSocketEvent.read) return;
+    if (_socket == null) return;
     final datagram = _socket!.receive();
     if (datagram == null) return;
     unawaited(_handleClientDatagram(datagram));
