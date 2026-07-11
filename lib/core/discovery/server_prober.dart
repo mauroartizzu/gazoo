@@ -28,7 +28,10 @@ class ServerProber {
     StreamSubscription? subscription;
     try {
       socket = await RawDatagramSocket.bind(InternetAddress.anyIPv4, 0);
-      final addresses = await InternetAddress.lookup(host);
+      final addresses = await InternetAddress.lookup(
+        host,
+        type: InternetAddressType.IPv4,
+      );
       if (addresses.isEmpty) {
         return ServerStatus.offline('Could not resolve host: $host');
       }

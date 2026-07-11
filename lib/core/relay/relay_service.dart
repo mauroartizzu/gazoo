@@ -55,7 +55,10 @@ class RelayService {
 
     try {
       for (final server in servers) {
-        final remoteAddresses = await InternetAddress.lookup(server.host);
+        final remoteAddresses = await InternetAddress.lookup(
+          server.host,
+          type: InternetAddressType.IPv4,
+        );
         final listener = RelayListener(
           bindAddress: InternetAddress.anyIPv4,
           listenPort: server.proxyPort,
@@ -88,7 +91,11 @@ class RelayService {
       rethrow;
     }
 
-    _pollTimer = Timer.periodic(statusPollInterval, (_) => pollNow());
+    _pollTimer = Timer.periodic(statusPollInterval, (_) {
+      pollNow().catchError((Object error) {
+        onLog?.call('pollNow() failed: $error');
+      });
+    });
     await pollNow();
   }
 
