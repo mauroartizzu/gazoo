@@ -4,6 +4,7 @@ class Settings {
   final String? lastServerId;
   final bool darkMode;
   final bool verboseLogging;
+  final bool hasSeenOnboarding;
 
   const Settings({
     required this.idleTimeout,
@@ -11,6 +12,7 @@ class Settings {
     this.lastServerId,
     required this.darkMode,
     required this.verboseLogging,
+    required this.hasSeenOnboarding,
   });
 
   static const Settings defaults = Settings(
@@ -19,6 +21,7 @@ class Settings {
     lastServerId: null,
     darkMode: false,
     verboseLogging: false,
+    hasSeenOnboarding: false,
   );
 
   Settings copyWith({
@@ -27,6 +30,7 @@ class Settings {
     String? lastServerId,
     bool? darkMode,
     bool? verboseLogging,
+    bool? hasSeenOnboarding,
   }) {
     return Settings(
       idleTimeout: idleTimeout ?? this.idleTimeout,
@@ -34,6 +38,7 @@ class Settings {
       lastServerId: lastServerId ?? this.lastServerId,
       darkMode: darkMode ?? this.darkMode,
       verboseLogging: verboseLogging ?? this.verboseLogging,
+      hasSeenOnboarding: hasSeenOnboarding ?? this.hasSeenOnboarding,
     );
   }
 
@@ -43,6 +48,7 @@ class Settings {
         'lastServerId': lastServerId,
         'darkMode': darkMode,
         'verboseLogging': verboseLogging,
+        'hasSeenOnboarding': hasSeenOnboarding,
       };
 
   factory Settings.fromJson(Map<String, dynamic> json) => Settings(
@@ -51,5 +57,6 @@ class Settings {
         lastServerId: json['lastServerId'] as String?,
         darkMode: json['darkMode'] as bool? ?? false,
         verboseLogging: json['verboseLogging'] as bool? ?? false,
+        hasSeenOnboarding: json['hasSeenOnboarding'] as bool? ?? false,
       );
 }
