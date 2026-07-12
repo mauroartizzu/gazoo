@@ -187,4 +187,28 @@ void main() {
 
     expect(find.textContaining('Could not find'), findsOneWidget);
   });
+
+  testWidgets('byte counter cross-fades via AnimatedSwitcher when counts change', (tester) async {
+    final fake = _FakeRelayService();
+    final relayNotifier = RelayNotifier(createRelayService: () => fake);
+    final server = sampleServer();
+
+    await tester.pumpWidget(_harness(relayNotifier, server));
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(AnimatedSwitcher), findsOneWidget);
+
+    fake.emit(RelayEvent(
+      serverId: server.id, status: RelayStatus.listening, bytesIn: 10, bytesOut: 5,
+    ));
+    await tester.pump();
+    expect(find.textContaining('5 B'), findsOneWidget);
+
+    fake.emit(RelayEvent(
+      serverId: server.id, status: RelayStatus.listening, bytesIn: 20, bytesOut: 15,
+    ));
+    await tester.pump(const Duration(milliseconds: 250));
+    expect(find.textContaining('15 B'), findsOneWidget);
+  });
 }
