@@ -52,8 +52,10 @@ class RelayService implements RelayServiceHandle {
     this.onLog,
   }) : prober = prober ?? const ServerProber();
 
+  @override
   Stream<RelayEvent> get events => _eventController.stream;
 
+  @override
   Future<void> start(List<ServerConfig> servers) async {
     if (_responder != null) {
       throw StateError('RelayService already running; call stop() first');
@@ -128,6 +130,7 @@ class RelayService implements RelayServiceHandle {
     }
   }
 
+  @override
   Future<void> stop() async {
     _pollTimer?.cancel();
     _pollTimer = null;
@@ -140,6 +143,7 @@ class RelayService implements RelayServiceHandle {
     _activeServers = [];
   }
 
+  @override
   Future<void> dispose() async {
     await stop();
     await _eventController.close();
