@@ -79,7 +79,13 @@ class _ActiveRelayScreenState extends State<ActiveRelayScreen> {
               },
             ),
             const SizedBox(height: 8),
-            Text('↑ ${event?.bytesOut ?? 0} B   ↓ ${event?.bytesIn ?? 0} B'),
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 200),
+              child: Text(
+                '↑ ${event?.bytesOut ?? 0} B   ↓ ${event?.bytesIn ?? 0} B',
+                key: ValueKey('${event?.bytesOut ?? 0}-${event?.bytesIn ?? 0}'),
+              ),
+            ),
             const Spacer(),
             if (Platform.isAndroid || Platform.isIOS)
               const Padding(
