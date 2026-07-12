@@ -45,12 +45,16 @@ class RelayNotifier extends ChangeNotifier {
   }
 
   Future<void> stop() async {
+    if (_stopping != null) return _stopping;
     final service = _service;
     if (service == null) return;
     final future = _stopInternal(service);
     _stopping = future;
-    await future;
-    _stopping = null;
+    try {
+      await future;
+    } finally {
+      _stopping = null;
+    }
   }
 
   Future<void> _stopInternal(RelayServiceHandle service) async {
