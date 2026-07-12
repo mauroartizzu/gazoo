@@ -109,6 +109,9 @@ void main() {
     await tester.tap(find.text('Open'));
     await tester.pumpAndSettle();
 
+    // runAsync bridges to the real event loop: RelayNotifier.stop()'s
+    // `await _subscription.cancel()` does not settle under fake-clock pump()
+    // alone in this environment. Do not remove — see task-7 investigation.
     await tester.runAsync(() async {
       await tester.tap(find.text('Stop Relay'));
       await tester.pump();
