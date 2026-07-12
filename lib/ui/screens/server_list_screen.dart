@@ -27,10 +27,22 @@ class ServerListScreen extends StatelessWidget {
                   key: ValueKey(server.id),
                   title: Text(server.name),
                   subtitle: Text(_subtitleFor(server, status)),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.delete_outline),
-                    tooltip: 'Remove ${server.name}',
-                    onPressed: () => notifier.remove(server.id),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        key: Key('edit-server-${server.id}'),
+                        icon: const Icon(Icons.edit_outlined),
+                        tooltip: 'Edit ${server.name}',
+                        onPressed: () => _showServerFormDialog(context, initial: server),
+                      ),
+                      IconButton(
+                        key: Key('delete-server-${server.id}'),
+                        icon: const Icon(Icons.delete_outline),
+                        tooltip: 'Remove ${server.name}',
+                        onPressed: () => notifier.remove(server.id),
+                      ),
+                    ],
                   ),
                   onTap: () => Navigator.of(context).push(
                     MaterialPageRoute(builder: (_) => ActiveRelayScreen(server: server)),
@@ -39,7 +51,7 @@ class ServerListScreen extends StatelessWidget {
               },
             ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _showAddServerDialog(context),
+        onPressed: () => _showServerFormDialog(context),
         tooltip: 'Add server',
         child: const Icon(Icons.add),
       ),
@@ -55,19 +67,28 @@ class ServerListScreen extends StatelessWidget {
     return '$address — ${motd.playerCount}/${motd.maxPlayers} players';
   }
 
-  Future<void> _showAddServerDialog(BuildContext context) async {
+  Future<void> _showServerFormDialog(BuildContext context, {ServerConfig? initial}) async {
     final notifier = context.read<ServerListNotifier>();
     final result = await showDialog<_ServerFormResult>(
       context: context,
-      builder: (_) => const _ServerFormDialog(),
+      builder: (_) => _ServerFormDialog(initial: initial),
     );
     if (result != null) {
-      await notifier.add(ServerConfig.create(
-        name: result.name,
-        host: result.host,
-        port: result.port,
-        proxyPort: result.proxyPort,
-      ));
+      if (initial == null) {
+        await notifier.add(ServerConfig.create(
+          name: result.name,
+          host: result.host,
+          port: result.port,
+          proxyPort: result.proxyPort,
+        ));
+      } else {
+        await notifier.update(initial.copyWith(
+          name: result.name,
+          host: result.host,
+          port: result.port,
+          proxyPort: result.proxyPort,
+        ));
+      }
     }
   }
 }
@@ -87,7 +108,9 @@ class _ServerFormResult {
 }
 
 class _ServerFormDialog extends StatefulWidget {
-  const _ServerFormDialog();
+  final ServerConfig? initial;
+
+  const _ServerFormDialog({this.initial});
 
   @override
   State<_ServerFormDialog> createState() => _ServerFormDialogState();
@@ -101,6 +124,18 @@ class _ServerFormDialogState extends State<_ServerFormDialog> {
   final _proxyPortController = TextEditingController(text: '19133');
 
   @override
+  void initState() {
+    super.initState();
+    final initial = widget.initial;
+    if (initial != null) {
+      _nameController.text = initial.name;
+      _hostController.text = initial.host;
+      _portController.text = initial.port.toString();
+      _proxyPortController.text = initial.proxyPort.toString();
+    }
+  }
+
+  @override
   void dispose() {
     _nameController.dispose();
     _hostController.dispose();
@@ -112,7 +147,7 @@ class _ServerFormDialogState extends State<_ServerFormDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Add server'),
+      title: Text(widget.initial == null ? 'Add server' : 'Edit server'),
       content: Form(
         key: _formKey,
         child: Column(
