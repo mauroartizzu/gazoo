@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gazoo — Minecraft Bedrock LAN Relay</title>
+<style>
+  :root {
+    --bg: #0f1115;
+    --panel: #171a21;
+    --text: #e8eaed;
+    --muted: #9aa3af;
+    --accent: #4caf7d;
+    --border: #2a2e37;
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #fafafa;
+      --panel: #ffffff;
+      --text: #1a1d21;
+      --muted: #5b6472;
+      --accent: #2e8b57;
+      --border: #e3e6ea;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+  }
+  .wrap { max-width: 780px; margin: 0 auto; padding: 64px 24px 96px; }
+  h1 { font-size: 2.4rem; margin-bottom: 4px; }
+  .tagline { color: var(--muted); font-size: 1.1rem; margin-bottom: 32px; }
+  .cta {
+    display: inline-block;
+    background: var(--accent);
+    color: #fff;
+    padding: 14px 28px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 1.05rem;
+    margin-bottom: 12px;
+  }
+  .platforms {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 20px 0 40px;
+  }
+  .platforms a {
+    color: var(--text);
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 8px 14px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 0.92rem;
+  }
+  .platforms a:hover { border-color: var(--accent); }
+  section { margin: 40px 0; }
+  h2 { font-size: 1.3rem; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+  ul { padding-left: 20px; }
+  li { margin-bottom: 6px; }
+  code {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.9em;
+  }
+  footer { color: var(--muted); font-size: 0.85rem; margin-top: 64px; }
+  footer a { color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Gazoo</h1>
+  <p class="tagline">Make a remote Minecraft: Bedrock Edition server show up as a LAN game on your console.</p>
+
+  <a class="cta" href="https://github.com/mauroartizzu/gazoo/releases/latest">Download Latest Release</a>
+
+  <div class="platforms">
+    <a href="https://github.com/mauroartizzu/gazoo/releases/latest/download/gazoo-windows.zip">Windows (.zip)</a>
+    <a href="https://github.com/mauroartizzu/gazoo/releases/latest/download/gazoo-macos.zip">macOS (.zip)</a>
+    <a href="https://github.com/mauroartizzu/gazoo/releases/latest/download/gazoo-linux.zip">Linux (.zip)</a>
+    <a href="https://github.com/mauroartizzu/gazoo/releases/latest/download/gazoo-android-debug.apk">Android (debug .apk)</a>
+    <a href="https://github.com/mauroartizzu/gazoo/releases/latest/download/gazoo-ios-unsigned.zip">iOS (unsigned, dev only)</a>
+  </div>
+
+  <section>
+    <h2>What it does</h2>
+    <p>
+      Xbox and PlayStation only let you join Minecraft Bedrock servers that appear
+      as a "LAN game" on your local network. Gazoo answers the console's LAN
+      discovery broadcast on your device's behalf, then transparently relays all
+      UDP traffic to the real remote server — no server-side changes required.
+    </p>
+  </section>
+
+  <section>
+    <h2>Status</h2>
+    <ul>
+      <li>Core relay engine (RakNet discovery + multi-server UDP proxy) — done, unit-tested</li>
+      <li>Desktop GUI (server list, live relay status, settings, onboarding) — done</li>
+      <li>Headless CLI mode (<code>--headless --server=host:port</code>) — done</li>
+      <li>Android foreground service / multicast lock — not yet implemented</li>
+      <li>iOS <code>Network.framework</code> fallback validation — not yet implemented</li>
+    </ul>
+    <p>
+      Windows, macOS, and Linux builds are fully functional today. Android and
+      iOS builds compile and are attached to every release for testing, but
+      background-execution platform glue is still in progress — keep the app
+      open in the foreground while playing on mobile.
+    </p>
+  </section>
+
+  <section>
+    <h2>Requirements</h2>
+    <p>
+      Your console and the device running Gazoo must be on the same Wi-Fi/local
+      network. On first run, desktop platforms may prompt to allow incoming
+      network connections (firewall) — accept it, or the console won't be able
+      to reach the relay.
+    </p>
+  </section>
+
+  <footer>
+    <a href="https://github.com/mauroartizzu/gazoo">Source on GitHub</a> · No ads, no telemetry, no analytics.
+  </footer>
+</div>
+</body>
+</html>
