@@ -22,7 +22,14 @@ class RelayEvent {
   });
 }
 
-class RelayService {
+abstract class RelayServiceHandle {
+  Stream<RelayEvent> get events;
+  Future<void> start(List<ServerConfig> servers);
+  Future<void> stop();
+  Future<void> dispose();
+}
+
+class RelayService implements RelayServiceHandle {
   final Duration idleTimeout;
   final Duration statusPollInterval;
   final ServerProber prober;
