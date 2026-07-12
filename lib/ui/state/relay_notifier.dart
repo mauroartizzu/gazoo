@@ -7,14 +7,17 @@ import '../../core/relay/relay_service.dart';
 
 class RelayNotifier extends ChangeNotifier {
   final RelayServiceHandle Function() createRelayService;
+  final void Function(ServerConfig server)? onStart;
 
   RelayServiceHandle? _service;
   StreamSubscription<RelayEvent>? _subscription;
   ServerConfig? _activeServer;
   RelayEvent? _lastEvent;
 
-  RelayNotifier({RelayServiceHandle Function()? createRelayService})
-      : createRelayService = createRelayService ?? (() => RelayService());
+  RelayNotifier({
+    RelayServiceHandle Function()? createRelayService,
+    this.onStart,
+  }) : createRelayService = createRelayService ?? (() => RelayService());
 
   ServerConfig? get activeServer => _activeServer;
   RelayEvent? get lastEvent => _lastEvent;
@@ -27,6 +30,7 @@ class RelayNotifier extends ChangeNotifier {
     final service = createRelayService();
     _service = service;
     _activeServer = server;
+    onStart?.call(server);
     _lastEvent = null;
     _subscription = service.events.listen((event) {
       _lastEvent = event;

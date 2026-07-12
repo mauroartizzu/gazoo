@@ -95,4 +95,18 @@ void main() {
     await notifier.stop();
     expect(notifier.isRunning, isFalse);
   });
+
+  test('onStart callback fires with the server when start() is called', () async {
+    final fake = _FakeRelayService();
+    ServerConfig? startedWith;
+    final notifier = RelayNotifier(
+      createRelayService: () => fake,
+      onStart: (server) => startedWith = server,
+    );
+
+    final server = sampleServer();
+    await notifier.start(server);
+
+    expect(startedWith, server);
+  });
 }
