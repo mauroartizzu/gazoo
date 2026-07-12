@@ -70,18 +70,45 @@ void main() {
   });
 
   testWidgets('deleting a server removes its tile', (tester) async {
-    await notifier.add(ServerConfig.create(
+    final server = ServerConfig.create(
       name: 'Sample Server', host: 'example.com', port: 19132, proxyPort: 19133,
-    ));
+    );
+    await notifier.add(server);
     await tester.pumpWidget(_app(notifier));
     await tester.pump();
 
     expect(find.byIcon(Icons.delete_outline), findsOneWidget);
-    await tester.tap(find.byIcon(Icons.delete_outline));
+    await tester.tap(find.byKey(Key('delete-server-${server.id}')));
     await tester.pumpAndSettle();
 
     expect(notifier.servers, isEmpty);
     expect(find.text('No servers yet. Tap + to add one.'), findsOneWidget);
+  });
+
+  testWidgets('editing a server via its edit icon updates it in place', (tester) async {
+    final server = ServerConfig.create(
+      name: 'Sample Server', host: 'example.com', port: 19132, proxyPort: 19133,
+    );
+    await notifier.add(server);
+    await tester.pumpWidget(_app(notifier));
+    await tester.pump();
+
+    await tester.tap(find.byKey(Key('edit-server-${server.id}')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Edit server'), findsOneWidget);
+    final nameField = tester.widget<TextFormField>(find.byKey(const Key('server-name-field')));
+    expect(nameField.controller!.text, 'Sample Server');
+
+    await tester.enterText(find.byKey(const Key('server-name-field')), 'Renamed Server');
+    await tester.tap(find.byKey(const Key('server-form-save-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Renamed Server'), findsOneWidget);
+    expect(find.text('Sample Server'), findsNothing);
+    expect(notifier.servers, hasLength(1));
+    expect(notifier.servers.single.name, 'Renamed Server');
+    expect(notifier.servers.single.id, server.id);
   });
 
   testWidgets('tapping a server tile navigates to Active Relay', (tester) async {
