@@ -18,6 +18,7 @@ class ActiveRelayScreen extends StatefulWidget {
 
 class _ActiveRelayScreenState extends State<ActiveRelayScreen> {
   RelayNotifier? _relayNotifier;
+  late final Future<List<String>> _lanIpsFuture;
 
   @override
   void didChangeDependencies() {
@@ -28,6 +29,7 @@ class _ActiveRelayScreenState extends State<ActiveRelayScreen> {
   @override
   void initState() {
     super.initState();
+    _lanIpsFuture = _detectedLanIps();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<RelayNotifier>().start(widget.server).catchError((Object error) {
         if (mounted) {
@@ -70,7 +72,7 @@ class _ActiveRelayScreenState extends State<ActiveRelayScreen> {
             Text(_statusLabel(event)),
             const SizedBox(height: 8),
             FutureBuilder<List<String>>(
-              future: _detectedLanIps(),
+              future: _lanIpsFuture,
               builder: (context, snapshot) {
                 final ips = snapshot.data ?? const [];
                 return Text('LAN IP: ${ips.isEmpty ? 'detecting…' : ips.join(', ')}');
