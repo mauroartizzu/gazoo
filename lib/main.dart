@@ -17,7 +17,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final prefs = await SharedPreferences.getInstance();
   final appLog = AppLog();
-  final serverListNotifier = ServerListNotifier(prefs: prefs)..startPolling();
+  final serverListNotifier = ServerListNotifier(prefs: prefs, onLog: appLog.append)..startPolling();
   final settingsNotifier = SettingsNotifier(prefs: prefs);
   final relayNotifier = RelayNotifier(
     createRelayService: () => RelayService(

@@ -76,6 +76,16 @@ void main() {
     expect(notifier.statusFor(server.id)!.online, isFalse);
   });
 
+  test('constructing with onLog and no probe override wires a logging default prober', () {
+    final logged = <String>[];
+    // Must not throw: constructing ServerListNotifier with onLog but no probe
+    // override should build a default ServerProber(onLog: onLog) internally.
+    // We don't call pollNow()/startPolling() here since that would hit real
+    // sockets; this only proves construction succeeds with the wiring in place.
+    final notifier = ServerListNotifier(prefs: prefs, onLog: logged.add);
+    expect(notifier.servers, isEmpty);
+  });
+
   test('startPolling calls pollNow immediately and then on an interval', () async {
     var callCount = 0;
     final notifier = ServerListNotifier(
