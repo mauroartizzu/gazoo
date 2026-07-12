@@ -1,0 +1,122 @@
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
+
+import 'package:gazoo/core/config/server_config.dart';
+import 'package:gazoo/core/relay/relay_service.dart';
+import 'package:gazoo/ui/screens/active_relay_screen.dart';
+import 'package:gazoo/ui/state/relay_notifier.dart';
+
+class _FakeRelayService implements RelayServiceHandle {
+  final _controller = StreamController<RelayEvent>.broadcast(sync: true);
+  bool stopped = false;
+
+  @override
+  Stream<RelayEvent> get events => _controller.stream;
+
+  @override
+  Future<void> start(List<ServerConfig> servers) async {}
+
+  @override
+  Future<void> stop() async {
+    stopped = true;
+  }
+
+  @override
+  Future<void> dispose() async {
+    stopped = true;
+    await _controller.close();
+  }
+
+  void emit(RelayEvent event) => _controller.add(event);
+}
+
+/// Pushes ActiveRelayScreen onto a real navigation stack (rather than making
+/// it the app's `home`), so `Navigator.pop()` inside the screen's Stop button
+/// has somewhere to pop back to — matching how Task 8 will actually navigate
+/// to it.
+Widget _harness(RelayNotifier relayNotifier, ServerConfig server) {
+  return ChangeNotifierProvider.value(
+    value: relayNotifier,
+    child: MaterialApp(
+      home: Builder(
+        builder: (context) => Scaffold(
+          body: Center(
+            child: ElevatedButton(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => ActiveRelayScreen(server: server)),
+              ),
+              child: const Text('Open'),
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+void main() {
+  ServerConfig sampleServer() => ServerConfig.create(
+        name: 'Test', host: 'example.com', port: 19132, proxyPort: 19133,
+      );
+
+  testWidgets('shows Starting… then Listening once the relay reports it', (tester) async {
+    final fake = _FakeRelayService();
+    final relayNotifier = RelayNotifier(createRelayService: () => fake);
+    final server = sampleServer();
+
+    await tester.pumpWidget(_harness(relayNotifier, server));
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Starting…'), findsOneWidget);
+
+    fake.emit(RelayEvent(
+      serverId: server.id, status: RelayStatus.listening, bytesIn: 0, bytesOut: 0,
+    ));
+    await tester.pump();
+
+    expect(find.text('Listening'), findsOneWidget);
+  });
+
+  testWidgets('shows Console Connected and byte counters once a session is active', (tester) async {
+    final fake = _FakeRelayService();
+    final relayNotifier = RelayNotifier(createRelayService: () => fake);
+    final server = sampleServer();
+
+    await tester.pumpWidget(_harness(relayNotifier, server));
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+
+    fake.emit(RelayEvent(
+      serverId: server.id, status: RelayStatus.consoleConnected, bytesIn: 42, bytesOut: 7,
+    ));
+    await tester.pump();
+
+    expect(find.text('Console Connected'), findsOneWidget);
+    expect(find.textContaining('42'), findsOneWidget);
+    expect(find.textContaining('7'), findsOneWidget);
+  });
+
+  testWidgets('Stop Relay button stops the relay and pops the screen', (tester) async {
+    final fake = _FakeRelayService();
+    final relayNotifier = RelayNotifier(createRelayService: () => fake);
+    final server = sampleServer();
+
+    await tester.pumpWidget(_harness(relayNotifier, server));
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+
+    await tester.runAsync(() async {
+      await tester.tap(find.text('Stop Relay'));
+      await tester.pump();
+    });
+    await tester.pumpAndSettle();
+
+    expect(fake.stopped, isTrue);
+    expect(find.text('Active Relay'), findsNothing);
+    expect(find.text('Open'), findsOneWidget);
+  });
+}
