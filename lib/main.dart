@@ -1,7 +1,10 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'cli/headless_runner.dart';
 import 'core/relay/relay_service.dart';
 import 'ui/screens/active_relay_screen.dart';
 import 'ui/screens/onboarding_screen.dart';
@@ -13,7 +16,19 @@ import 'ui/state/server_list_notifier.dart';
 import 'ui/state/settings_notifier.dart';
 import 'ui/theme/app_theme.dart';
 
-Future<void> main() async {
+Future<void> main(List<String> args) async {
+  HeadlessArgs? headlessArgs;
+  try {
+    headlessArgs = parseHeadlessArgs(args);
+  } on HeadlessArgsError catch (e) {
+    stderr.writeln(e.message);
+    exit(64);
+  }
+  if (headlessArgs != null) {
+    await runHeadless(headlessArgs);
+    return;
+  }
+
   WidgetsFlutterBinding.ensureInitialized();
   final prefs = await SharedPreferences.getInstance();
   final appLog = AppLog();
