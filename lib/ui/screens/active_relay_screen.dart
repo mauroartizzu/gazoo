@@ -34,7 +34,7 @@ class _ActiveRelayScreenState extends State<ActiveRelayScreen> {
       context.read<RelayNotifier>().start(widget.server).catchError((Object error) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to start relay: $error')),
+            SnackBar(content: Text(_friendlyStartError(error))),
           );
         }
       });
@@ -120,4 +120,24 @@ class _ActiveRelayScreenState extends State<ActiveRelayScreen> {
       return const [];
     }
   }
+}
+
+String _friendlyStartError(Object error) {
+  if (error is SocketException) {
+    final message = error.message.toLowerCase();
+    if (message.contains('already in use')) {
+      return 'Port already in use — another app (or another Gazoo instance) may already be using this port.';
+    }
+    if (message.contains('permission denied')) {
+      return 'Permission denied opening the network port. Check your firewall settings.';
+    }
+    if (message.contains('failed host lookup') || message.contains('no address associated')) {
+      return 'Could not find the server host. Check the host/IP address.';
+    }
+    return 'Network error: ${error.message}';
+  }
+  if (error is StateError) {
+    return error.message;
+  }
+  return 'Failed to start relay: $error';
 }

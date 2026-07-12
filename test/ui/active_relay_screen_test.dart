@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -31,6 +32,25 @@ class _FakeRelayService implements RelayServiceHandle {
   }
 
   void emit(RelayEvent event) => _controller.add(event);
+}
+
+class _ThrowingRelayService implements RelayServiceHandle {
+  final Object errorToThrow;
+  _ThrowingRelayService(this.errorToThrow);
+
+  @override
+  Stream<RelayEvent> get events => const Stream.empty();
+
+  @override
+  Future<void> start(List<ServerConfig> servers) async {
+    throw errorToThrow;
+  }
+
+  @override
+  Future<void> stop() async {}
+
+  @override
+  Future<void> dispose() async {}
 }
 
 /// Pushes ActiveRelayScreen onto a real navigation stack (rather than making
@@ -121,5 +141,50 @@ void main() {
     expect(fake.stopped, isTrue);
     expect(find.text('Active Relay'), findsNothing);
     expect(find.text('Open'), findsOneWidget);
+  });
+
+  testWidgets('shows a specific message when the port is already in use', (tester) async {
+    final relayNotifier = RelayNotifier(
+      createRelayService: () => _ThrowingRelayService(
+        const SocketException('Address already in use', osError: null),
+      ),
+    );
+    final server = sampleServer();
+
+    await tester.pumpWidget(_harness(relayNotifier, server));
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('already in use'), findsOneWidget);
+  });
+
+  testWidgets('shows a specific message when permission is denied', (tester) async {
+    final relayNotifier = RelayNotifier(
+      createRelayService: () => _ThrowingRelayService(
+        const SocketException('Permission denied', osError: null),
+      ),
+    );
+    final server = sampleServer();
+
+    await tester.pumpWidget(_harness(relayNotifier, server));
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Permission denied'), findsOneWidget);
+  });
+
+  testWidgets('shows a specific message when the host cannot be found', (tester) async {
+    final relayNotifier = RelayNotifier(
+      createRelayService: () => _ThrowingRelayService(
+        const SocketException('Failed host lookup: \'nonexistent.example\'', osError: null),
+      ),
+    );
+    final server = sampleServer();
+
+    await tester.pumpWidget(_harness(relayNotifier, server));
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Could not find'), findsOneWidget);
   });
 }
