@@ -143,7 +143,7 @@ String _friendlyStartError(Object error) {
     return 'Network error: ${error.message}';
   }
   if (error is StateError) {
-    return error.message;
+    return 'Relay is already running.';
   }
   return 'Failed to start relay: $error';
 }
