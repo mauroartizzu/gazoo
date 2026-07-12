@@ -23,7 +23,7 @@ class SettingsScreen extends StatelessWidget {
             trailing: DropdownButton<int>(
               key: const Key('idle-timeout-dropdown'),
               value: settings.idleTimeout.inSeconds,
-              items: const [30, 60, 120, 300]
+              items: const [10, 30, 60, 120, 300, 600]
                   .map((seconds) => DropdownMenuItem(value: seconds, child: Text('${seconds}s')))
                   .toList(),
               onChanged: (seconds) {
