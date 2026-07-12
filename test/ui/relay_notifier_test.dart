@@ -109,4 +109,27 @@ void main() {
 
     expect(startedWith, server);
   });
+
+  test('start() waits out an in-flight stop() before proceeding, avoiding the double-active-service race', () async {
+    final fakeA = _FakeRelayService();
+    final fakeB = _FakeRelayService();
+    var callCount = 0;
+    final services = [fakeA, fakeB];
+    final notifier = RelayNotifier(createRelayService: () => services[callCount++]);
+
+    await notifier.start(sampleServer());
+
+    // Fire-and-forget stop (mirrors ActiveRelayScreen.dispose(), which can't await),
+    // then immediately start again for a different server — this used to race.
+    final stopFuture = notifier.stop();
+    final secondServer = ServerConfig.create(
+      name: 'Second', host: 'example.com', port: 19132, proxyPort: 19134,
+    );
+    await notifier.start(secondServer);
+    await stopFuture;
+
+    expect(fakeA.disposed, isTrue);
+    expect(notifier.isRunning, isTrue);
+    expect(notifier.activeServer, secondServer);
+  });
 }

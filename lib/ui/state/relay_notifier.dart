@@ -13,6 +13,7 @@ class RelayNotifier extends ChangeNotifier {
   StreamSubscription<RelayEvent>? _subscription;
   ServerConfig? _activeServer;
   RelayEvent? _lastEvent;
+  Future<void>? _stopping;
 
   RelayNotifier({
     RelayServiceHandle Function()? createRelayService,
@@ -24,6 +25,9 @@ class RelayNotifier extends ChangeNotifier {
   bool get isRunning => _service != null;
 
   Future<void> start(ServerConfig server) async {
+    if (_stopping != null) {
+      await _stopping;
+    }
     if (_service != null) {
       throw StateError('RelayNotifier already running; call stop() first');
     }
@@ -43,6 +47,13 @@ class RelayNotifier extends ChangeNotifier {
   Future<void> stop() async {
     final service = _service;
     if (service == null) return;
+    final future = _stopInternal(service);
+    _stopping = future;
+    await future;
+    _stopping = null;
+  }
+
+  Future<void> _stopInternal(RelayServiceHandle service) async {
     await _subscription?.cancel();
     _subscription = null;
     await service.dispose();
