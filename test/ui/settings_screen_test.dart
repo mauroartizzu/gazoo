@@ -76,4 +76,14 @@ void main() {
     expect(find.text('Welcome to Gazoo'), findsOneWidget);
     expect(find.byKey(const Key('get-started-button')), findsNothing);
   });
+
+  testWidgets('idle timeout dropdown offers the full 10s-10min range', (tester) async {
+    await tester.pumpWidget(_app(notifier, appLog));
+
+    await tester.tap(find.byKey(const Key('idle-timeout-dropdown')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('10s'), findsOneWidget);
+    expect(find.text('600s'), findsOneWidget);
+  });
 }
