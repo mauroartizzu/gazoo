@@ -22,7 +22,8 @@ class ServerListNotifier extends ChangeNotifier {
     required this.prefs,
     Future<ServerStatus> Function(String host, int port)? probe,
     this.pollInterval = const Duration(seconds: 10),
-  }) : probe = probe ?? const ServerProber().probe {
+    void Function(String message)? onLog,
+  }) : probe = probe ?? ServerProber(onLog: onLog).probe {
     _loadFromPrefs();
   }
 

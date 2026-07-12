@@ -66,4 +66,34 @@ void main() {
     expect(status.online, isFalse);
     expect(status.error, isNotNull);
   });
+
+  test('onLog receives a probing message and an online message on success', () async {
+    final fakeServer = _FakeMinecraftServer();
+    await fakeServer.start();
+    addTearDown(fakeServer.close);
+
+    final logged = <String>[];
+    final prober = ServerProber(timeout: const Duration(seconds: 2), onLog: logged.add);
+    final status = await prober.probe('127.0.0.1', fakeServer.port);
+
+    expect(status.online, isTrue);
+    expect(logged, isNotEmpty);
+    expect(logged.any((m) => m.contains('Probing') && m.contains('127.0.0.1')), isTrue);
+    expect(logged.any((m) => m.contains('is online') && m.contains('4/20')), isTrue);
+  });
+
+  test('onLog receives a probing message and a timeout message when nothing responds', () async {
+    final probe = await RawDatagramSocket.bind(InternetAddress.loopbackIPv4, 0);
+    final unusedPort = probe.port;
+    probe.close();
+
+    final logged = <String>[];
+    final prober = ServerProber(timeout: const Duration(milliseconds: 300), onLog: logged.add);
+    final status = await prober.probe('127.0.0.1', unusedPort);
+
+    expect(status.online, isFalse);
+    expect(logged, isNotEmpty);
+    expect(logged.any((m) => m.contains('Probing') && m.contains('127.0.0.1')), isTrue);
+    expect(logged.any((m) => m.contains('did not respond')), isTrue);
+  });
 }
