@@ -86,9 +86,11 @@ class _LogPanel extends StatelessWidget {
       children: [
         SizedBox(
           height: 150,
-          child: ListView(
-            children:
-                log.lines.map((line) => Text(line, style: const TextStyle(fontSize: 11))).toList(),
+          child: SingleChildScrollView(
+            child: SelectableText(
+              log.lines.join('\n'),
+              style: const TextStyle(fontSize: 11, fontFamily: 'monospace'),
+            ),
           ),
         ),
       ],
