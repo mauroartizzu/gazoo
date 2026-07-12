@@ -66,5 +66,7 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Gazoo needs local network access to make a remote Minecraft server appear as a LAN game to your console and relay its traffic.</string>
 </dict>
 </plist>
