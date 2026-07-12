@@ -13,6 +13,14 @@
 
 ---
 
+## Why this exists
+
+My kids wanted to play Minecraft with their friends on a shared server — but consoles only join servers that show up as LAN games, and every existing way around that was either hacky to set up or buried in an app full of ads. So I built our own: a clean, simple relay that just works.
+
+**Gazoo is free, and will always be free. No ads, no telemetry, no "premium" tier. Ever.**
+
+It's also a learning project: I made it to study **Dart and Flutter** and to explore what it takes to build one codebase that genuinely runs across Windows, macOS, Linux, Android, and iOS. Most of the code was written with [Claude](https://claude.com) (Anthropic's AI assistant) — the architecture, protocol work, tests, and iterations were done together with it as a way of studying the language and the cross-platform toolchain. If you're learning Flutter yourself, the codebase is intentionally small and layered, and you're welcome to dig through it.
+
 ## What it does
 
 Xbox and PlayStation only let you join Minecraft Bedrock servers that appear as a **LAN game** on your local network. Gazoo answers the console's RakNet LAN-discovery broadcast on your device's behalf, then transparently relays all UDP traffic between the console and the real remote server — no server-side changes required.
@@ -75,7 +83,7 @@ The console's RakNet **Unconnected Ping** broadcast to UDP port `19132` is answe
 
 ## Contributing
 
-Issues and PRs welcome. This project has no ads, no telemetry, and no analytics — contributions that add any of those won't be accepted.
+Issues and PRs welcome — see [CONTRIBUTING.md](CONTRIBUTING.md) for the ground rules and project layout, and [CHANGELOG.md](CHANGELOG.md) for release history. This project has no ads, no telemetry, and no analytics — contributions that add any of those won't be accepted. Security issues: see [SECURITY.md](SECURITY.md).
 
 ## About the name
 

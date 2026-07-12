@@ -1,0 +1,21 @@
+name: Feature request
+description: Suggest an idea or improvement
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+      description: Describe the situation where you missed this feature, rather than the implementation.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would you like to happen?
+    validations:
+      required: true
+  - type: markdown
+    attributes:
+      value: |
+        Note: requests to add ads, telemetry, analytics, or paid features will be declined — Gazoo is free and stays free.

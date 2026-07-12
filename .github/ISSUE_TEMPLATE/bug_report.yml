@@ -1,0 +1,49 @@
+name: Bug report
+description: Something doesn't work (server not showing up on the console, relay fails, crash, ...)
+labels: [bug]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: Gazoo version
+      description: Shown in the release you downloaded (e.g. v1.0.0+1-1)
+      placeholder: v1.0.0+1-1
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform running Gazoo
+      options:
+        - Windows
+        - macOS
+        - Linux
+        - Android
+        - iOS
+    validations:
+      required: true
+  - type: input
+    id: console
+    attributes:
+      label: Console
+      placeholder: Xbox Series S / PS5 / Switch / ...
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: In-app log
+      description: Settings → "Show log panel" → select and copy the log text. This is the single most useful thing you can attach.
+      render: text
+  - type: checkboxes
+    id: network
+    attributes:
+      label: Network checklist
+      options:
+        - label: The console and the device running Gazoo are on the same Wi-Fi/local network
+        - label: I allowed Gazoo through the firewall when prompted (desktop)
