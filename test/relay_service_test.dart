@@ -45,6 +45,29 @@ Future<int> _freePort() async {
   return port;
 }
 
+/// Binding a just-closed ephemeral port is inherently racy on shared CI
+/// runners: another process can grab it between [_freePort] closing its
+/// probe socket and [RelayService.start] binding the relay listener.
+/// Retry with a fresh port instead of flaking.
+Future<ServerConfig> _startOnFreePort(
+    RelayService service, _FakeRemoteServer fakeRemote) async {
+  for (var attempt = 0;; attempt++) {
+    final proxyPort = await _freePort();
+    final server = ServerConfig.create(
+      name: 'Test Server',
+      host: '127.0.0.1',
+      port: fakeRemote.port,
+      proxyPort: proxyPort,
+    );
+    try {
+      await service.start([server]);
+      return server;
+    } on SocketException {
+      if (attempt >= 4) rethrow;
+    }
+  }
+}
+
 void main() {
   late _FakeRemoteServer fakeRemote;
   late RelayService service;
@@ -60,18 +83,13 @@ void main() {
   });
 
   test('start() opens a listener per server and pollNow() reports live info from the real server', () async {
-    final proxyPort = await _freePort();
-    final server = ServerConfig.create(
-      name: 'Test Server', host: '127.0.0.1', port: fakeRemote.port, proxyPort: proxyPort,
-    );
-
     service = RelayService(prober: const ServerProber(timeout: Duration(seconds: 2)));
 
     final events = <RelayEvent>[];
     final sub = service.events.listen(events.add);
     addTearDown(sub.cancel);
 
-    await service.start([server]);
+    final server = await _startOnFreePort(service, fakeRemote);
     await service.pollNow();
 
     expect(events, isNotEmpty);
@@ -80,21 +98,16 @@ void main() {
   });
 
   test('an active console session flips status to consoleConnected on the next poll', () async {
-    final proxyPort = await _freePort();
-    final server = ServerConfig.create(
-      name: 'Test Server', host: '127.0.0.1', port: fakeRemote.port, proxyPort: proxyPort,
-    );
-
     service = RelayService(prober: const ServerProber(timeout: Duration(seconds: 2)));
     final events = <RelayEvent>[];
     final sub = service.events.listen(events.add);
     addTearDown(sub.cancel);
 
-    await service.start([server]);
+    final server = await _startOnFreePort(service, fakeRemote);
 
     final console = await RawDatagramSocket.bind(InternetAddress.loopbackIPv4, 0);
     addTearDown(console.close);
-    console.send('hello'.codeUnits, InternetAddress.loopbackIPv4, proxyPort);
+    console.send('hello'.codeUnits, InternetAddress.loopbackIPv4, server.proxyPort);
     await Future.delayed(const Duration(milliseconds: 100));
 
     await service.pollNow();
@@ -105,16 +118,11 @@ void main() {
   });
 
   test('stop() releases the ports so they can be rebound immediately', () async {
-    final proxyPort = await _freePort();
-    final server = ServerConfig.create(
-      name: 'Test Server', host: '127.0.0.1', port: fakeRemote.port, proxyPort: proxyPort,
-    );
-
     service = RelayService(prober: const ServerProber(timeout: Duration(seconds: 2)));
-    await service.start([server]);
+    final server = await _startOnFreePort(service, fakeRemote);
     await service.stop();
 
-    final rebound = await RawDatagramSocket.bind(InternetAddress.anyIPv4, proxyPort);
+    final rebound = await RawDatagramSocket.bind(InternetAddress.anyIPv4, server.proxyPort);
     rebound.close();
   });
 }
