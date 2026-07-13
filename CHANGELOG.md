@@ -9,6 +9,17 @@ build number comes from the CI run that produced the release.
 
 ## [Unreleased]
 
+### Added
+- **Android foreground service + multicast lock** — the relay now keeps
+  running while the app is backgrounded, with a persistent notification,
+  and holds a Wi-Fi multicast lock so the console's discovery broadcasts
+  keep arriving. Wired through a new platform hook (`RelayPlatform`) that
+  is a no-op on all other platforms.
+- **Release signing** — Android release builds are now signed with a real
+  release keystore when `android/key.properties` is present (falls back to
+  debug signing otherwise, so fresh clones still build). iOS builds sign
+  automatically with the configured development team.
+
 ### Fixed
 - Server names containing `;` no longer corrupt the advertised LAN MOTD
   (sanitized on build, recovered on parse, rejected in the add/edit form).

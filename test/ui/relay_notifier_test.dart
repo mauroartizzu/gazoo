@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gazoo/core/config/server_config.dart';
 import 'package:gazoo/core/relay/relay_service.dart';
+import 'package:gazoo/platform/relay_platform.dart';
 import 'package:gazoo/ui/state/relay_notifier.dart';
 
 class _FakeRelayService implements RelayServiceHandle {
@@ -178,4 +180,76 @@ void main() {
     expect(notifier.isRunning, isTrue);
     expect(notifier.activeServer, secondServer);
   });
+
+  test('platform hooks fire on start (with server name) and on stop', () async {
+    final fake = _FakeRelayService();
+    final platform = _RecordingRelayPlatform();
+    final notifier = RelayNotifier(
+      createRelayService: () => fake,
+      relayPlatform: platform,
+    );
+
+    await notifier.start(sampleServer());
+    expect(platform.startedWith, 'Test');
+    expect(platform.stopCalls, 0);
+
+    await notifier.stop();
+    expect(platform.stopCalls, 1);
+  });
+
+  test('platform hooks do not fire when the relay fails to start', () async {
+    final platform = _RecordingRelayPlatform();
+    final notifier = RelayNotifier(
+      createRelayService: () => _FailingRelayService(),
+      relayPlatform: platform,
+    );
+
+    await expectLater(notifier.start(sampleServer()), throwsA(isA<SocketException>()));
+
+    expect(platform.startedWith, isNull);
+    // _stopInternal runs during rollback, so a stop-side call is fine — but
+    // the "started" hook must never have fired for a relay that never ran.
+  });
+
+  test('a platform hook throwing does not break the relay lifecycle', () async {
+    final fake = _FakeRelayService();
+    final notifier = RelayNotifier(
+      createRelayService: () => fake,
+      relayPlatform: _ThrowingRelayPlatform(),
+    );
+
+    await notifier.start(sampleServer());
+    expect(notifier.isRunning, isTrue);
+
+    await notifier.stop();
+    expect(notifier.isRunning, isFalse);
+    expect(fake.disposed, isTrue);
+  });
+}
+
+class _RecordingRelayPlatform implements RelayPlatform {
+  String? startedWith;
+  int stopCalls = 0;
+
+  @override
+  Future<void> onRelayStarted(String serverName) async {
+    startedWith = serverName;
+  }
+
+  @override
+  Future<void> onRelayStopped() async {
+    stopCalls++;
+  }
+}
+
+class _ThrowingRelayPlatform implements RelayPlatform {
+  @override
+  Future<void> onRelayStarted(String serverName) async {
+    throw PlatformException(code: 'boom');
+  }
+
+  @override
+  Future<void> onRelayStopped() async {
+    throw PlatformException(code: 'boom');
+  }
 }

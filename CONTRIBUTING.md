@@ -50,6 +50,24 @@ flutter run -d macos   # or windows / linux
 Every push to `main` triggers the release workflow (tests → multi-platform
 builds → GitHub Release), so `main` is expected to always be releasable.
 
+## Release signing (maintainers)
+
+- **Android**: release builds are signed when `android/key.properties`
+  exists (gitignored), pointing at a keystore kept **outside** the repo:
+
+  ```properties
+  storePassword=...
+  keyPassword=...
+  keyAlias=gazoo
+  storeFile=/absolute/path/to/gazoo-release.jks
+  ```
+
+  Without it, release builds fall back to debug signing so fresh clones
+  and CI still build. Never commit a keystore or its passwords.
+- **iOS**: automatic signing with the development team configured in the
+  Xcode project. Building for a real device requires being signed into
+  that Apple Developer account in Xcode.
+
 ## Reporting bugs
 
 Use the bug report issue template. The most useful thing you can include

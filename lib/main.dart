@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'cli/headless_runner.dart';
 import 'core/relay/relay_service.dart';
+import 'platform/relay_platform.dart';
 import 'ui/screens/active_relay_screen.dart';
 import 'ui/screens/onboarding_screen.dart';
 import 'ui/screens/server_list_screen.dart';
@@ -41,6 +42,7 @@ Future<void> main(List<String> args) async {
     ),
     onStart: (server) =>
         settingsNotifier.update((s) => s.copyWith(lastServerId: server.id)),
+    relayPlatform: RelayPlatform.forCurrentPlatform(),
   );
 
   runApp(GazooApp(

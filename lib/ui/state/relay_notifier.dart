@@ -4,10 +4,12 @@ import 'package:flutter/foundation.dart';
 
 import '../../core/config/server_config.dart';
 import '../../core/relay/relay_service.dart';
+import '../../platform/relay_platform.dart';
 
 class RelayNotifier extends ChangeNotifier {
   final RelayServiceHandle Function() createRelayService;
   final void Function(ServerConfig server)? onStart;
+  final RelayPlatform relayPlatform;
 
   RelayServiceHandle? _service;
   StreamSubscription<RelayEvent>? _subscription;
@@ -18,7 +20,9 @@ class RelayNotifier extends ChangeNotifier {
   RelayNotifier({
     RelayServiceHandle Function()? createRelayService,
     this.onStart,
-  }) : createRelayService = createRelayService ?? (() => RelayService());
+    RelayPlatform? relayPlatform,
+  })  : createRelayService = createRelayService ?? (() => RelayService()),
+        relayPlatform = relayPlatform ?? NoopRelayPlatform();
 
   ServerConfig? get activeServer => _activeServer;
   RelayEvent? get lastEvent => _lastEvent;
@@ -47,6 +51,12 @@ class RelayNotifier extends ChangeNotifier {
       rethrow;
     }
     onStart?.call(server);
+    try {
+      await relayPlatform.onRelayStarted(server.name);
+    } catch (_) {
+      // A platform-side failure (e.g. the foreground service not starting)
+      // must not tear down an otherwise working relay.
+    }
   }
 
   Future<void> stop() async {
@@ -69,6 +79,12 @@ class RelayNotifier extends ChangeNotifier {
     _service = null;
     _activeServer = null;
     _lastEvent = null;
+    try {
+      await relayPlatform.onRelayStopped();
+    } catch (_) {
+      // Best-effort: failing to stop the notification/service must not
+      // block relay teardown.
+    }
     notifyListeners();
   }
 

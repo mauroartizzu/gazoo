@@ -56,10 +56,11 @@ Grab the latest build for your platform from the [Releases page](https://github.
 | Core relay engine (RakNet discovery + multi-server UDP proxy) | ✅ Done, unit-tested |
 | Desktop GUI (server list, live relay status, settings, onboarding) | ✅ Done |
 | Headless CLI mode | ✅ Done |
-| Android foreground service / multicast lock | 🚧 Not yet implemented |
-| iOS `Network.framework` fallback validation | 🚧 Not yet implemented |
+| Android foreground service / multicast lock | ✅ Implemented (awaiting broader on-device testing) |
+| iOS local-network permission + signed device builds | ✅ Implemented |
+| iOS broadcast reception (multicast entitlement) | 🚧 Requires Apple's [multicast entitlement](https://developer.apple.com/contact/request/networking-multicast) — request pending |
 
-Windows, macOS, and Linux are fully functional today. Android and iOS builds compile and are attached to every release for testing, but keep the app in the foreground while playing on mobile until the background platform glue lands.
+Windows, macOS, and Linux are fully functional today. On Android the relay now survives backgrounding via a foreground service with a persistent notification. On iOS the app builds and signs for real devices, but receiving the console's discovery broadcast requires Apple's restricted multicast entitlement — until that's granted, iOS support is experimental.
 
 ## Building from source
 
