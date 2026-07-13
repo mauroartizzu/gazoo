@@ -65,6 +65,15 @@ HeadlessArgs? parseHeadlessArgs(List<String> args) {
   if (port == null) {
     throw HeadlessArgsError('Invalid port in --server=$server');
   }
+  if (port < 1 || port > 65535) {
+    throw HeadlessArgsError('Port must be between 1 and 65535 (got $port)');
+  }
+  if (proxyPort < 1 || proxyPort > 65535) {
+    throw HeadlessArgsError('--proxy-port must be between 1 and 65535 (got $proxyPort)');
+  }
+  if (proxyPort == 19132) {
+    throw const HeadlessArgsError('19132 is reserved for discovery; choose a different --proxy-port');
+  }
 
   return HeadlessArgs(host: host, port: port, name: name, proxyPort: proxyPort);
 }

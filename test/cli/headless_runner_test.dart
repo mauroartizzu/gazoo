@@ -52,6 +52,31 @@ void main() {
     );
   });
 
+  test('throws HeadlessArgsError when the port is 0', () {
+    expect(
+      () => parseHeadlessArgs(['--headless', '--server=example.com:0']),
+      throwsA(isA<HeadlessArgsError>()),
+    );
+  });
+
+  test('throws HeadlessArgsError when the port is out of range (99999)', () {
+    expect(
+      () => parseHeadlessArgs(['--headless', '--server=example.com:99999']),
+      throwsA(isA<HeadlessArgsError>()),
+    );
+  });
+
+  test('throws HeadlessArgsError when --proxy-port is 19132 (reserved for discovery)', () {
+    expect(
+      () => parseHeadlessArgs([
+        '--headless',
+        '--server=example.com:19132',
+        '--proxy-port=19132',
+      ]),
+      throwsA(isA<HeadlessArgsError>()),
+    );
+  });
+
   test('ignores unrelated arguments', () {
     final args = parseHeadlessArgs(['--some-other-flag', '--headless', '--server=example.com:19132']);
     expect(args, isNotNull);
