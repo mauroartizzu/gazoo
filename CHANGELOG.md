@@ -9,6 +9,19 @@ build number comes from the CI run that produced the release.
 
 ## [Unreleased]
 
+### Fixed
+- Server names containing `;` no longer corrupt the advertised LAN MOTD
+  (sanitized on build, recovered on parse, rejected in the add/edit form).
+- A failed relay start (e.g. port already in use) now rolls back cleanly
+  instead of leaving the app stuck on "Starting…" — and no longer persists
+  the broken server as the auto-start target.
+- Socket-level errors (Wi-Fi drop, sleep/wake) are now logged and handled
+  on all listeners instead of becoming unhandled async errors.
+- Double-tapping a server tile can no longer open two relay screens and
+  tear down the active relay.
+- Headless CLI now validates port ranges (1–65535) and rejects proxy port
+  19132 (reserved for discovery), matching the GUI's validation.
+
 ## [1.0.0] - 2026-07-13
 
 First public release.
