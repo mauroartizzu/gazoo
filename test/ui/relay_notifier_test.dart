@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gazoo/core/config/server_config.dart';
 import 'package:gazoo/core/relay/relay_service.dart';
@@ -29,6 +30,28 @@ class _FakeRelayService implements RelayServiceHandle {
   }
 
   void emit(RelayEvent event) => _controller.add(event);
+}
+
+class _FailingRelayService implements RelayServiceHandle {
+  final _controller = StreamController<RelayEvent>.broadcast(sync: true);
+  bool disposed = false;
+
+  @override
+  Stream<RelayEvent> get events => _controller.stream;
+
+  @override
+  Future<void> start(List<ServerConfig> servers) async {
+    throw const SocketException('Address already in use');
+  }
+
+  @override
+  Future<void> stop() async {}
+
+  @override
+  Future<void> dispose() async {
+    disposed = true;
+    await _controller.close();
+  }
 }
 
 void main() {
@@ -108,6 +131,29 @@ void main() {
     await notifier.start(server);
 
     expect(startedWith, server);
+  });
+
+  test('a failed start() leaves the notifier in a clean, not-running state and does not fire onStart', () async {
+    final fake = _FailingRelayService();
+    ServerConfig? startedWith;
+    final notifier = RelayNotifier(
+      createRelayService: () => fake,
+      onStart: (server) => startedWith = server,
+    );
+
+    await expectLater(notifier.start(sampleServer()), throwsA(isA<SocketException>()));
+
+    expect(notifier.isRunning, isFalse);
+    expect(notifier.activeServer, isNull);
+    expect(notifier.lastEvent, isNull);
+    expect(startedWith, isNull);
+    expect(fake.disposed, isTrue);
+
+    // The notifier should be usable again after the failure (not stuck).
+    final goodFake = _FakeRelayService();
+    final notifier2 = RelayNotifier(createRelayService: () => goodFake);
+    await notifier2.start(sampleServer());
+    expect(notifier2.isRunning, isTrue);
   });
 
   test('start() waits out an in-flight stop() before proceeding, avoiding the double-active-service race', () async {

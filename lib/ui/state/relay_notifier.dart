@@ -34,14 +34,19 @@ class RelayNotifier extends ChangeNotifier {
     final service = createRelayService();
     _service = service;
     _activeServer = server;
-    onStart?.call(server);
     _lastEvent = null;
     _subscription = service.events.listen((event) {
       _lastEvent = event;
       notifyListeners();
     });
     notifyListeners();
-    await service.start([server]);
+    try {
+      await service.start([server]);
+    } catch (_) {
+      await _stopInternal(service);
+      rethrow;
+    }
+    onStart?.call(server);
   }
 
   Future<void> stop() async {

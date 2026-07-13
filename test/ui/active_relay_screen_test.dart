@@ -152,7 +152,14 @@ void main() {
     final server = sampleServer();
 
     await tester.pumpWidget(_harness(relayNotifier, server));
-    await tester.tap(find.text('Open'));
+    // runAsync bridges to the real event loop: RelayNotifier.start()'s
+    // failure path now does `await _subscription.cancel()` /
+    // `await service.dispose()` (see task-2 rollback fix), which does not
+    // settle under fake-clock pump() alone in this environment.
+    await tester.runAsync(() async {
+      await tester.tap(find.text('Open'));
+      await tester.pump();
+    });
     await tester.pumpAndSettle();
 
     expect(find.textContaining('already in use'), findsOneWidget);
@@ -167,7 +174,10 @@ void main() {
     final server = sampleServer();
 
     await tester.pumpWidget(_harness(relayNotifier, server));
-    await tester.tap(find.text('Open'));
+    await tester.runAsync(() async {
+      await tester.tap(find.text('Open'));
+      await tester.pump();
+    });
     await tester.pumpAndSettle();
 
     expect(find.textContaining('Permission denied'), findsOneWidget);
@@ -182,7 +192,10 @@ void main() {
     final server = sampleServer();
 
     await tester.pumpWidget(_harness(relayNotifier, server));
-    await tester.tap(find.text('Open'));
+    await tester.runAsync(() async {
+      await tester.tap(find.text('Open'));
+      await tester.pump();
+    });
     await tester.pumpAndSettle();
 
     expect(find.textContaining('Could not find'), findsOneWidget);
