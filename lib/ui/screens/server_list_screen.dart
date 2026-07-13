@@ -6,8 +6,17 @@ import '../../core/discovery/server_prober.dart';
 import '../state/server_list_notifier.dart';
 import 'active_relay_screen.dart';
 
-class ServerListScreen extends StatelessWidget {
+class ServerListScreen extends StatefulWidget {
   const ServerListScreen({super.key});
+
+  @override
+  State<ServerListScreen> createState() => _ServerListScreenState();
+}
+
+class _ServerListScreenState extends State<ServerListScreen> {
+  // Guards against a rapid double-tap on a tile pushing two ActiveRelayScreen
+  // routes — the second route's dispose() would tear down the first's relay.
+  bool _navigating = false;
 
   @override
   Widget build(BuildContext context) {
@@ -44,9 +53,7 @@ class ServerListScreen extends StatelessWidget {
                       ),
                     ],
                   ),
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => ActiveRelayScreen(server: server)),
-                  ),
+                  onTap: () => _openActiveRelay(context, server),
                 );
               },
             ),
@@ -56,6 +63,15 @@ class ServerListScreen extends StatelessWidget {
         child: const Icon(Icons.add),
       ),
     );
+  }
+
+  Future<void> _openActiveRelay(BuildContext context, ServerConfig server) async {
+    if (_navigating) return;
+    _navigating = true;
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => ActiveRelayScreen(server: server)),
+    );
+    _navigating = false;
   }
 
   String _subtitleFor(ServerConfig server, ServerStatus? status) {
@@ -157,7 +173,7 @@ class _ServerFormDialogState extends State<_ServerFormDialog> {
               key: const Key('server-name-field'),
               controller: _nameController,
               decoration: const InputDecoration(labelText: 'Server name'),
-              validator: (v) => (v == null || v.isEmpty) ? 'Required' : null,
+              validator: _validateName,
             ),
             TextFormField(
               key: const Key('server-host-field'),
@@ -177,7 +193,7 @@ class _ServerFormDialogState extends State<_ServerFormDialog> {
               controller: _proxyPortController,
               decoration: const InputDecoration(labelText: 'Local proxy port'),
               keyboardType: TextInputType.number,
-              validator: _validatePort,
+              validator: _validateProxyPort,
             ),
           ],
         ),
@@ -205,10 +221,23 @@ class _ServerFormDialogState extends State<_ServerFormDialog> {
     );
   }
 
+  String? _validateName(String? value) {
+    if (value == null || value.isEmpty) return 'Required';
+    if (value.contains(';')) return 'Name cannot contain ";"';
+    return null;
+  }
+
   String? _validatePort(String? value) {
     if (value == null || value.isEmpty) return 'Required';
     final parsed = int.tryParse(value);
     if (parsed == null || parsed < 1 || parsed > 65535) return 'Invalid port';
+    return null;
+  }
+
+  String? _validateProxyPort(String? value) {
+    final basic = _validatePort(value);
+    if (basic != null) return basic;
+    if (int.parse(value!) == 19132) return '19132 is reserved for discovery';
     return null;
   }
 }
