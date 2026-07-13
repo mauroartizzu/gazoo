@@ -44,7 +44,7 @@ Grab the latest build for your platform from the [Releases page](https://github.
 | Windows | [gazoo-windows.zip](https://github.com/mauroartizzu/gazoo/releases/latest/download/gazoo-windows.zip) |
 | macOS | [gazoo-macos.zip](https://github.com/mauroartizzu/gazoo/releases/latest/download/gazoo-macos.zip) |
 | Linux | [gazoo-linux.zip](https://github.com/mauroartizzu/gazoo/releases/latest/download/gazoo-linux.zip) |
-| Android | [gazoo-android-debug.apk](https://github.com/mauroartizzu/gazoo/releases/latest/download/gazoo-android-debug.apk) (debug build) |
+| Android | [gazoo-android.apk](https://github.com/mauroartizzu/gazoo/releases/latest/download/gazoo-android.apk) (signed, sideload via "install unknown apps") |
 | iOS | [gazoo-ios-unsigned.zip](https://github.com/mauroartizzu/gazoo/releases/latest/download/gazoo-ios-unsigned.zip) (unsigned, dev-only) |
 
 **Requirement:** your console and the device running Gazoo must be on the same Wi-Fi/local network. On first run, desktop platforms may prompt to allow incoming network connections (firewall) — accept it, or the console won't be able to reach the relay.

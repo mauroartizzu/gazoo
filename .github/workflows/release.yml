@@ -101,7 +101,7 @@ jobs:
           path: gazoo-linux.zip
 
   build-android:
-    name: Build Android (debug APK)
+    name: Build Android (signed APK)
     needs: test
     runs-on: ubuntu-latest
     steps:
@@ -113,13 +113,31 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
+      - name: Restore release keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/gazoo-release.jks"
+            {
+              echo "storePassword=$KEYSTORE_PASSWORD"
+              echo "keyPassword=$KEYSTORE_PASSWORD"
+              echo "keyAlias=$KEY_ALIAS"
+              echo "storeFile=$RUNNER_TEMP/gazoo-release.jks"
+            } > android/key.properties
+            echo "Release keystore restored — building a signed release APK."
+          else
+            echo "No keystore secrets — release APK will be debug-signed."
+          fi
       - run: flutter pub get
-      - run: flutter build apk --debug
-      - run: cp build/app/outputs/flutter-apk/app-debug.apk gazoo-android-debug.apk
+      - run: flutter build apk --release
+      - run: cp build/app/outputs/flutter-apk/app-release.apk gazoo-android.apk
       - uses: actions/upload-artifact@v4
         with:
           name: gazoo-android
-          path: gazoo-android-debug.apk
+          path: gazoo-android.apk
 
   build-ios:
     name: Build iOS (unsigned, best-effort)
