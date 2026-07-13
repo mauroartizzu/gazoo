@@ -207,8 +207,10 @@ void main() {
     await expectLater(notifier.start(sampleServer()), throwsA(isA<SocketException>()));
 
     expect(platform.startedWith, isNull);
-    // _stopInternal runs during rollback, so a stop-side call is fine — but
-    // the "started" hook must never have fired for a relay that never ran.
+    // _stopInternal runs during rollback, so exactly one stop-side call is
+    // expected (a no-op stopService on Android) — but the "started" hook
+    // must never have fired for a relay that never ran.
+    expect(platform.stopCalls, 1);
   });
 
   test('a platform hook throwing does not break the relay lifecycle', () async {

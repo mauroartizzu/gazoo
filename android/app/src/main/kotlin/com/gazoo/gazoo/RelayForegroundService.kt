@@ -34,10 +34,15 @@ class RelayForegroundService : Service() {
         val notification = buildNotification(serverName)
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            // connectedDevice: we're relaying traffic for a device on the
+            // local network (the console). Unlike dataSync, this type has no
+            // system-enforced runtime cap on Android 14+, and our declared
+            // CHANGE_WIFI_MULTICAST_STATE permission satisfies its
+            // prerequisites.
             startForeground(
                 NOTIFICATION_ID,
                 notification,
-                ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC,
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE,
             )
         } else {
             startForeground(NOTIFICATION_ID, notification)
