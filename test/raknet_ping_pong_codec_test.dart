@@ -102,5 +102,60 @@ void main() {
       expect(() => parseMotd('not;a;valid;motd'),
           throwsA(isA<MalformedPacketException>()));
     });
+
+    test('buildMotd sanitizes ";" and newlines out of serverName and worldName', () {
+      final motd = buildMotd(
+        serverName: 'Evil;Server\nName',
+        protocolVersion: 622,
+        gameVersion: '1.21.0',
+        playerCount: 1,
+        maxPlayers: 5,
+        serverGuid: 1,
+        worldName: 'World;2\nName',
+        gamemode: 'Survival',
+        portIpv4: 19133,
+        portIpv6: 19134,
+      );
+      expect(motd, 'MCPE;Evil Server Name;622;1.21.0;1;5;1;World 2 Name;Survival;1;19133;19134;');
+
+      final parsed = parseMotd(motd);
+      expect(parsed.serverName, 'Evil Server Name');
+      expect(parsed.worldName, 'World 2 Name');
+      expect(parsed.portIpv4, 19133);
+      expect(parsed.portIpv6, 19134);
+    });
+
+    test('parseMotd recovers a name containing one embedded ";"', () {
+      // A remote (non-Gazoo) server whose own MOTD encoder didn't sanitize.
+      const motd = 'MCPE;My;Server;622;1.21.0;3;10;555;World;Survival;1;19133;19134;';
+      final parsed = parseMotd(motd);
+      expect(parsed.serverName, 'My;Server');
+      expect(parsed.protocolVersion, 622);
+      expect(parsed.gameVersion, '1.21.0');
+      expect(parsed.playerCount, 3);
+      expect(parsed.maxPlayers, 10);
+      expect(parsed.serverGuid, 555);
+      expect(parsed.worldName, 'World');
+      expect(parsed.gamemode, 'Survival');
+      expect(parsed.portIpv4, 19133);
+      expect(parsed.portIpv6, 19134);
+    });
+
+    test('parseMotd recovers a name containing two embedded ";"', () {
+      const motd = 'MCPE;My;;Server;622;1.21.0;3;10;555;World;Survival;1;19133;19134;';
+      final parsed = parseMotd(motd);
+      expect(parsed.serverName, 'My;;Server');
+      expect(parsed.protocolVersion, 622);
+      expect(parsed.worldName, 'World');
+      expect(parsed.portIpv4, 19133);
+      expect(parsed.portIpv6, 19134);
+    });
+
+    test('parseMotd still throws on a genuinely malformed MOTD with extra parts', () {
+      // Extra parts present (so recovery is attempted), but the numeric
+      // fields are non-numeric garbage even after recovery.
+      const motd = 'MCPE;My;Server;notanumber;1.21.0;3;10;555;World;Survival;1;19133;19134;';
+      expect(() => parseMotd(motd), throwsA(isA<MalformedPacketException>()));
+    });
   });
 }

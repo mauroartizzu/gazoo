@@ -130,6 +130,13 @@ UnconnectedPong decodeUnconnectedPong(Uint8List data) {
   return UnconnectedPong(pingTime: pingTime, serverGuid: serverGuid, motd: motd);
 }
 
+/// Replaces the MOTD field delimiter (`;`) and newlines with a space so a
+/// user-supplied name can never shift the fixed-position fields that follow
+/// it in the `;`-delimited MOTD string.
+String _sanitizeMotdField(String s) {
+  return s.replaceAll(';', ' ').replaceAll('\n', ' ');
+}
+
 String buildMotd({
   required String serverName,
   required int protocolVersion,
@@ -142,8 +149,25 @@ String buildMotd({
   required int portIpv4,
   required int portIpv6,
 }) {
-  return 'MCPE;$serverName;$protocolVersion;$gameVersion;$playerCount;$maxPlayers;'
-      '$serverGuid;$worldName;$gamemode;1;$portIpv4;$portIpv6;';
+  final safeServerName = _sanitizeMotdField(serverName);
+  final safeWorldName = _sanitizeMotdField(worldName);
+  return 'MCPE;$safeServerName;$protocolVersion;$gameVersion;$playerCount;$maxPlayers;'
+      '$serverGuid;$safeWorldName;$gamemode;1;$portIpv4;$portIpv6;';
+}
+
+MotdFields _motdFieldsFrom(List<String> parts) {
+  return MotdFields(
+    serverName: parts[1],
+    protocolVersion: int.parse(parts[2]),
+    gameVersion: parts[3],
+    playerCount: int.parse(parts[4]),
+    maxPlayers: int.parse(parts[5]),
+    serverGuid: int.parse(parts[6]),
+    worldName: parts[7],
+    gamemode: parts[8],
+    portIpv4: int.parse(parts[10]),
+    portIpv6: int.parse(parts[11]),
+  );
 }
 
 MotdFields parseMotd(String motd) {
@@ -152,19 +176,24 @@ MotdFields parseMotd(String motd) {
     throw MalformedPacketException('Unrecognized MOTD format: $motd');
   }
   try {
-    return MotdFields(
-      serverName: parts[1],
-      protocolVersion: int.parse(parts[2]),
-      gameVersion: parts[3],
-      playerCount: int.parse(parts[4]),
-      maxPlayers: int.parse(parts[5]),
-      serverGuid: int.parse(parts[6]),
-      worldName: parts[7],
-      gamemode: parts[8],
-      portIpv4: int.parse(parts[10]),
-      portIpv6: int.parse(parts[11]),
-    );
+    return _motdFieldsFrom(parts);
   } on FormatException catch (e) {
+    // A remote server whose own name contains embedded ';' shifts every
+    // field after it. If there are more parts than expected, assume the
+    // extra ones belong to the name field, rejoin them, and retry once.
+    if (parts.length > 13) {
+      final extra = parts.length - 13;
+      final recovered = <String>[
+        parts[0],
+        parts.sublist(1, 2 + extra).join(';'),
+        ...parts.sublist(2 + extra),
+      ];
+      try {
+        return _motdFieldsFrom(recovered);
+      } on FormatException {
+        throw MalformedPacketException('Unrecognized MOTD format: $motd ($e)');
+      }
+    }
     throw MalformedPacketException('Unrecognized MOTD format: $motd ($e)');
   }
 }
