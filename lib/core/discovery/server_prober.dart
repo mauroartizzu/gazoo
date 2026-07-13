@@ -50,21 +50,28 @@ class ServerProber {
         }
       });
 
-      subscription = socket.listen((event) {
-        if (event != RawSocketEvent.read) return;
-        final datagram = socket!.receive();
-        if (datagram == null) return;
-        try {
-          final pong = decodeUnconnectedPong(datagram.data);
-          final motd = parseMotd(pong.motd);
-          if (!completer.isCompleted) {
-            onLog?.call('$host:$port is online (${motd.playerCount}/${motd.maxPlayers} players)');
-            completer.complete(ServerStatus.online(motd, DateTime.now().difference(sentAt)));
+      subscription = socket.listen(
+        (event) {
+          if (event != RawSocketEvent.read) return;
+          final datagram = socket!.receive();
+          if (datagram == null) return;
+          try {
+            final pong = decodeUnconnectedPong(datagram.data);
+            final motd = parseMotd(pong.motd);
+            if (!completer.isCompleted) {
+              onLog?.call('$host:$port is online (${motd.playerCount}/${motd.maxPlayers} players)');
+              completer.complete(ServerStatus.online(motd, DateTime.now().difference(sentAt)));
+            }
+          } on MalformedPacketException {
+            // Not a valid pong (or from an unrelated sender) — keep waiting.
           }
-        } on MalformedPacketException {
-          // Not a valid pong (or from an unrelated sender) — keep waiting.
-        }
-      });
+        },
+        onError: (Object error) {
+          if (!completer.isCompleted) {
+            completer.complete(ServerStatus.offline('Socket error: $error'));
+          }
+        },
+      );
 
       final result = await completer.future;
       timer.cancel();

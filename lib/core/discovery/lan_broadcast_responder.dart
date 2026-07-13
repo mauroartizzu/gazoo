@@ -39,7 +39,10 @@ class LanBroadcastResponder {
   Future<void> start() async {
     _socket = await RawDatagramSocket.bind(bindAddress, listenPort);
     _socket!.broadcastEnabled = true;
-    _socket!.listen(_onEvent);
+    _socket!.listen(
+      _onEvent,
+      onError: (Object error) => onLog?.call('LanBroadcastResponder socket error: $error'),
+    );
   }
 
   void _onEvent(RawSocketEvent event) {

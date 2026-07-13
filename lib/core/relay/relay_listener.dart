@@ -36,7 +36,10 @@ class RelayListener {
 
   Future<void> start() async {
     _socket = await RawDatagramSocket.bind(bindAddress, listenPort);
-    _socket!.listen(_onClientEvent);
+    _socket!.listen(
+      _onClientEvent,
+      onError: (Object error) => onLog?.call('RelayListener socket error: $error'),
+    );
     _sweepTimer = Timer.periodic(sweepInterval, (_) {
       final expired = _sessions.sweepExpired(idleTimeout, DateTime.now());
       for (final session in expired) {
@@ -95,7 +98,13 @@ class RelayListener {
       serverSocket: rawSocket,
       lastActivity: DateTime.now(),
     );
-    rawSocket.listen((event) => _onServerEvent(event, session));
+    rawSocket.listen(
+      (event) => _onServerEvent(event, session),
+      onError: (Object error) {
+        onLog?.call('RelayListener session socket error for ${session.key}: $error');
+        _sessions.removeAndClose(session.key);
+      },
+    );
     _sessions.put(session);
     onLog?.call('New session: $key');
     return session;
